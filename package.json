@@ -1,7 +1,7 @@
 {
 	"name": "para-shortcuts",
 	"version": "0.1.0",
-	"description": "This plugin provides usefull commands and shortcuts to manage your knowledge using the PARA method (by Tiago Forte).",
+	"description": "This plugin provides usefull commands and shortcuts to manage your knowledge using the PARA method.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
