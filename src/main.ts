@@ -98,10 +98,19 @@ export default class ParaShortcutsPlugin extends Plugin {
 				// move file to archive
 				let archiveFolderName = this.settings.folders.get(ParaType.archive);
 				let subfolderName = this.settings.folders.get(paraType);
-				let pathToFile = join(this.app.vault.getRoot().name, archiveFolderName, subfolderName, activeFile.name);
-				new Notice(`Moving file to: ${pathToFile}`);
-				this.app.fileManager.renameFile(activeFile, pathToFile).catch((err) => {
-					new Notice(`Unable to move file to: ${pathToFile}`);
+				let pathToFolder = join(this.app.vault.getRoot().name, archiveFolderName, subfolderName);
+				let pathToFile =  join(pathToFolder, activeFile.name);
+				this.app.fileManager.renameFile(activeFile, pathToFile).then(_ => {
+					new Notice(`Moved file to ${pathToFile}.`);
+				}).catch((err) => {
+					this.app.vault.createFolder(pathToFolder).then( _ => {
+						new Notice(`Created ${pathToFolder} and retrying...`);
+						this.app.fileManager.renameFile(activeFile, pathToFile).catch(_ => {
+							new Notice(`Unable to move file to ${pathToFolder}.`);
+						});
+					}).catch(_ => {
+						new Notice(`Unable to create folder ${pathToFolder}.`);
+					});
 				});
 			}
 		}
