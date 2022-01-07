@@ -28,6 +28,11 @@ export default class ParaShortcutsPlugin extends Plugin {
 			name: 'Move current file to archive',
 			checkCallback: (checking: boolean) => this.commandMoveToArchive(checking),
 		});
+		this.addCommand({
+			id: 'restore-from-archive',
+			name: 'Restore entry from archive',
+			checkCallback: (checking: boolean) => this.
+		});
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
 
@@ -71,10 +76,20 @@ export default class ParaShortcutsPlugin extends Plugin {
 		});
 	}
 
+	private commandRestoreFromArchive(checking: boolean) : boolean | void {
+		let activeFile = this.app.workspace.getActiveFile();
+		if(checking && activeFile !== null){
+			let toplevelParatype = this.findTopelevelParaTypeInPath(activeFile.parent);
+			return toplevelParatype === ParaType.archive;
+		}
+
+		return false;
+	}
+
 	private commandMoveToArchive(checking: boolean): boolean | void {
 		let activeFile = this.app.workspace.getActiveFile();
 		if (checking){
-			return (activeFile === null) ? false : true;
+			return activeFile !== null;
 		}
 		if (activeFile !== null){
 			// do real stuff
@@ -90,7 +105,6 @@ export default class ParaShortcutsPlugin extends Plugin {
 				});
 			}
 		}
-		return true;
 	}
 
 
