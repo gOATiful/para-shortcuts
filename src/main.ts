@@ -1,12 +1,10 @@
-import {Notice, Plugin, TFolder } from 'obsidian';
+import {Notice, Plugin, TAbstractFile, TFolder } from 'obsidian';
 
 import { Settings, DEFAULT_SETTINGS } from 'settings/settings.js';
 import { ParaShortcutsSettingTab } from 'settings/settings_tab.js';
 import { CreateNewEntryModal } from 'modals/new_entry_modal.js';
 import { ParaType } from 'para_types';
 import { join } from 'path';
-import * as path from 'path/posix';
-import { existsSync } from 'fs';
 
 export default class ParaShortcutsPlugin extends Plugin {
 	settings: Settings;
@@ -18,29 +16,22 @@ export default class ParaShortcutsPlugin extends Plugin {
 		this.addCommand({
 			id: 'create-new-entry',
 			name: 'Create new entry',
-			callback: () => {		
-				let modal = new CreateNewEntryModal(this.app, this);
-				modal.open();
-			}
+			callback:() => this.commandCreateNewEntry(),
 		});
 		this.addCommand({
 			id: 'init-vault',
 			name: 'Init PARA folders',
-			callback: this.commandInitPara,
+			callback: () => this.commandInitPara(),
 		});
 		this.addCommand({
 			id: 'move-to-archive',
 			name: 'Move current file to archive',
-			checkCallback: this.commandMoveToArchive,
+			checkCallback: (checking: boolean) => this.commandMoveToArchive(checking),
 		});
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
 
 	onunload() {
-	}
-
-	public getSettings() : Settings{
-		return this.settings;
 	}
 
 	async loadSettings() {
@@ -51,9 +42,33 @@ export default class ParaShortcutsPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	public createEntryByType(type: ParaType, filename = 'undefined.md'){
+		let folderName = this.settings.folders.get(type);
+		let rootFolderChildren = this.app.vault.getRoot().children;
+		let selectedFolder = rootFolderChildren.find(ele => ele.name === folderName)
+		if (selectedFolder !== undefined){
+			let filepath = join("/", folderName, filename);
+			this.app.vault.create(filepath, '').then((ret) => {
+				this.app.workspace.activeLeaf.openFile(ret); // open the created file
+			});
+		}
+	}
+
+	private commandCreateNewEntry(){	
+		let modal = new CreateNewEntryModal(this.app, this);
+		modal.open();
+	}
 
 	private commandInitPara(){
-		console.log("init");
+		if(this.isParaVault()){
+			new Notice("PARA already initialized!");
+			return;
+		}
+		this.createParaFolders().then(() => {
+			new Notice("Vaul successful initialized!");
+		}).catch(_ => {
+			new Notice("Error creating PARA folders");
+		});
 	}
 
 	private commandMoveToArchive(checking: boolean): boolean | void {
@@ -63,7 +78,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		}
 		if (activeFile !== null){
 			// do real stuff
-			let paraType = this.findParaTypeInPath(activeFile.parent);
+			let paraType = this.findTopelevelParaTypeInPath(activeFile.parent);
 			if (paraType != ParaType.archive){
 				// move file to archive
 				let archiveFolderName = this.settings.folders.get(ParaType.archive);
@@ -84,7 +99,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @param file 
 	 * @returns the ParaType if found, returns null if not
 	 */
-	private findParaTypeInPath(folder : TFolder) : ParaType | null {
+	private findTopelevelParaTypeInPath(folder : TFolder) : ParaType | null {
 		var type : ParaType | null = null;
 		this.settings.folders.forEach((val, key)=> {
 			if (folder.name === val){
@@ -93,13 +108,38 @@ export default class ParaShortcutsPlugin extends Plugin {
 		});
 		if(!folder.isRoot()){ 
 			// always prioritize found type from parent to avoid nested folders
-			console.log("searching in parent");
-			let foundTypeInParent = this.findParaTypeInPath(folder.parent);
+			let foundTypeInParent = this.findTopelevelParaTypeInPath(folder.parent);
 			if (foundTypeInParent != null){
 				type = foundTypeInParent;
 			}
 		}
 		return type;
 	}
+
+	private async createParaFolders(): Promise<void>{
+		return new Promise<void>(async (resolve, reject) => {
+			for(let foldername of this.settings.folders.values()){
+				try {
+					await this.app.vault.createFolder(foldername);
+				} catch (error) {
+					reject(error);
+				}
+			}
+			resolve();
+		});
+	}
+
+	private isParaVault(): boolean{
+		let neededFolders = this.settings.folders.values();
+		let root = this.app.vault.getRoot();
+		for(let i of neededFolders){
+			let found = root.children.find((elem) => i === elem.name);
+			if(found === undefined){
+				return false;
+			}
+		}
+		return true;
+	}
+
 }
 

@@ -1,12 +1,22 @@
 import ParaShortcutsPlugin from "main";
 import { App, FuzzySuggestModal} from "obsidian";
 import { ParaType } from "para_types";
-import { join } from "path";
 
 
 export class CreateNewEntryModal extends FuzzySuggestModal<ParaType> {
-	app : App;
-	plugin : ParaShortcutsPlugin;
+	
+	plugin: ParaShortcutsPlugin;
+
+	constructor(app: App, plugin: ParaShortcutsPlugin) {
+		super(app);
+		this.plugin = plugin;
+		this.setPlaceholder("Create a new entry for:");
+		this.modalEl.appendChild(this.createAdditionalInformationEl());
+	}
+	
+	onChooseItem(item: ParaType, evt: MouseEvent | KeyboardEvent): void {
+		this.plugin.createEntryByType(item);
+	}
 
 	getItems(): ParaType[] {
 		return [ParaType.project, ParaType.area_of_responsibility, ParaType.resources];
@@ -15,26 +25,21 @@ export class CreateNewEntryModal extends FuzzySuggestModal<ParaType> {
 	getItemText(item: ParaType): string {
 		return item;
 	}
-	
-	onChooseItem(item: ParaType, evt: MouseEvent | KeyboardEvent): void {
-		let settings = this.plugin.getSettings();
-		let folderName = settings.folders.get(item);
-		let rootFolderChildren = this.app.vault.getRoot().children;
-		let selectedFolder = rootFolderChildren.find(ele => ele.name === folderName)
-		if (selectedFolder !== undefined){
-			let fileName = 'test.md'
-			let filepath = join("/", folderName, fileName);
-			this.app.vault.create(filepath, "hallo").then((ret) => {
-				this.app.workspace.activeLeaf.openFile(ret); // open the created file
-			});
-		}
+
+	private createFileNameInformationEl(): HTMLElement {
+		let surroundingDiv = document.createElement('div');
+		let label = document.createElement('div');
+		label.innerText = 'File name:'
+		let textInput = document.createElement('input');
+		surroundingDiv.appendChild(label);
+		surroundingDiv.appendChild(textInput);
+		return surroundingDiv;
 	}
 
-	constructor(app: App, plugin: ParaShortcutsPlugin) {
-		super(app);
-		this.app = app;
-		this.plugin = plugin;
-		this.setPlaceholder("Create a new entry for:");
+	private createAdditionalInformationEl(): HTMLElement{
+		let additionalInfo = document.createElement('div');
+		additionalInfo.appendChild(this.createFileNameInformationEl());
+		return additionalInfo;
 	}
 
 }
