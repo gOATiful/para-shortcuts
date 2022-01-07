@@ -4,7 +4,7 @@ import { Settings, DEFAULT_SETTINGS } from 'settings/settings.js';
 import { ParaShortcutsSettingTab } from 'settings/settings_tab.js';
 import { CreateNewEntryModal } from 'modals/new_entry_modal.js';
 import { ParaType } from 'para_types';
-import { join } from 'path';
+import { dirname, join } from 'path';
 
 export default class ParaShortcutsPlugin extends Plugin {
 	settings: Settings;
@@ -31,7 +31,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		this.addCommand({
 			id: 'restore-from-archive',
 			name: 'Restore entry from archive',
-			checkCallback: (checking: boolean) => this.
+			checkCallback: (checking: boolean) => true,
 		});
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
@@ -82,7 +82,6 @@ export default class ParaShortcutsPlugin extends Plugin {
 			let toplevelParatype = this.findTopelevelParaTypeInPath(activeFile.parent);
 			return toplevelParatype === ParaType.archive;
 		}
-
 		return false;
 	}
 
@@ -98,24 +97,41 @@ export default class ParaShortcutsPlugin extends Plugin {
 				// move file to archive
 				let archiveFolderName = this.settings.folders.get(ParaType.archive);
 				let subfolderName = this.settings.folders.get(paraType);
-				let pathToFolder = join(this.app.vault.getRoot().name, archiveFolderName, subfolderName);
-				let pathToFile =  join(pathToFolder, activeFile.name);
-				this.app.fileManager.renameFile(activeFile, pathToFile).then(_ => {
+				let pathToFile = join(this.app.vault.getRoot().name, archiveFolderName, subfolderName, activeFile.name);
+				this.moveFileAndCreateFolder(activeFile, pathToFile).then(()=>{
 					new Notice(`Moved file to ${pathToFile}.`);
-				}).catch((err) => {
-					this.app.vault.createFolder(pathToFolder).then( _ => {
-						new Notice(`Created ${pathToFolder} and retrying...`);
-						this.app.fileManager.renameFile(activeFile, pathToFile).catch(_ => {
-							new Notice(`Unable to move file to ${pathToFolder}.`);
-						});
-					}).catch(_ => {
-						new Notice(`Unable to create folder ${pathToFolder}.`);
-					});
+				}).catch((_) => {
+					new Notice(`Unable to move file to ${pathToFile}.`);
 				});
 			}
 		}
 	}
 
+	private async moveFileAndCreateFolder(file: TAbstractFile, newPath: string): Promise<void>{
+		return new Promise(async (resolve, reject) => {
+			var shouldRetry = true;
+			var err = null;
+			while(shouldRetry){
+				try{
+					await this.app.fileManager.renameFile(file, newPath);
+					shouldRetry = false;
+				}catch(error){ //TODO: eval error
+					let pathToFolder = dirname(newPath);
+					try {
+						await this.app.vault.createFolder(pathToFolder)
+					} catch (error) {
+						err = error;
+						shouldRetry = false;
+					}
+				}
+			}
+			if(err != null){
+				reject(err);
+			}else{
+				resolve();
+			}
+		});
+	}
 
 	/**
 	 * 
@@ -130,7 +146,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 			}
 		});
 		if(!folder.isRoot()){ 
-			// always prioritize found type from parent to avoid nested folders
+			// always prioritize found type from parent to avoid nested folder issue
 			let foundTypeInParent = this.findTopelevelParaTypeInPath(folder.parent);
 			if (foundTypeInParent != null){
 				type = foundTypeInParent;
