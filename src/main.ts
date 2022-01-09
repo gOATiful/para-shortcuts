@@ -1,4 +1,4 @@
-import {Notice, Plugin, TAbstractFile, TFolder } from 'obsidian';
+import {EditableFileView, Notice, Plugin, TAbstractFile, TextFileView, TFolder } from 'obsidian';
 
 import { Settings, DEFAULT_SETTINGS } from 'settings/settings.js';
 import { ParaShortcutsSettingTab } from 'settings/settings_tab.js';
@@ -20,7 +20,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: 'init-vault',
-			name: 'Init PARA folders',
+			name: 'Init vault with PARA folders',
 			callback: () => this.commandInitPara(),
 		});
 		this.addCommand({
@@ -31,7 +31,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		this.addCommand({
 			id: 'restore-from-archive',
 			name: 'Restore entry from archive',
-			checkCallback: (checking: boolean) => true,
+			checkCallback: (checking: boolean) => this.commandRestoreFromArchive(checking),
 		});
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
@@ -47,14 +47,14 @@ export default class ParaShortcutsPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	public createEntryByType(type: ParaType, filename = 'undefined.md'){
+	public createEntryByType(type: ParaType, filename = 'untitled.md'){
 		let folderName = this.settings.folders.get(type);
 		let rootFolderChildren = this.app.vault.getRoot().children;
 		let selectedFolder = rootFolderChildren.find(ele => ele.name === folderName)
 		if (selectedFolder !== undefined){
 			let filepath = join("/", folderName, filename);
-			this.app.vault.create(filepath, '').then((ret) => {
-				this.app.workspace.activeLeaf.openFile(ret); // open the created file
+			this.app.vault.create(filepath, this.createMetaHeader()).then((ret) => {
+				this.app.workspace.activeLeaf.openFile(ret, TextFileView); // open the created file
 			});
 		}
 	}
@@ -78,33 +78,46 @@ export default class ParaShortcutsPlugin extends Plugin {
 
 	private commandRestoreFromArchive(checking: boolean) : boolean | void {
 		let activeFile = this.app.workspace.getActiveFile();
-		if(checking && activeFile !== null){
+		if(activeFile !== null){
 			let toplevelParatype = this.findTopelevelParaTypeInPath(activeFile.parent);
-			return toplevelParatype === ParaType.archive;
+			if(checking){
+				return toplevelParatype === ParaType.archive;
+			}
+			let currentFolder = activeFile.parent;
+			let paraType = this.findParaTypeInPath(currentFolder);
+			if(paraType != null){
+				let paraFolder = this.settings.folders.get(paraType);
+				let newFilePath = join(paraFolder, activeFile.name);
+				this.moveFileAndCreateFolder(activeFile, newFilePath).then(() => {
+					new Notice(`Restored file to ${newFilePath}`);
+				}).catch((_)=>{
+					new Notice(`Unable to resotre file`);
+				});
+			}
 		}
+
 		return false;
 	}
 
 	private commandMoveToArchive(checking: boolean): boolean | void {
 		let activeFile = this.app.workspace.getActiveFile();
-		if (checking){
-			return activeFile !== null;
-		}
 		if (activeFile !== null){
-			// do real stuff
 			let paraType = this.findTopelevelParaTypeInPath(activeFile.parent);
-			if (paraType != ParaType.archive){
-				// move file to archive
-				let archiveFolderName = this.settings.folders.get(ParaType.archive);
-				let subfolderName = this.settings.folders.get(paraType);
-				let pathToFile = join(this.app.vault.getRoot().name, archiveFolderName, subfolderName, activeFile.name);
-				this.moveFileAndCreateFolder(activeFile, pathToFile).then(()=>{
-					new Notice(`Moved file to ${pathToFile}.`);
-				}).catch((_) => {
-					new Notice(`Unable to move file to ${pathToFile}.`);
-				});
+			if (checking) {
+				// enable command if not in archive
+				return paraType != ParaType.archive;
 			}
+			// move file to archive
+			let archiveFolderName = this.settings.folders.get(ParaType.archive);
+			let subfolderName = this.settings.folders.get(paraType);
+			let pathToFile = join(this.app.vault.getRoot().name, archiveFolderName, subfolderName, activeFile.name);
+			this.moveFileAndCreateFolder(activeFile, pathToFile).then(()=>{
+				new Notice(`Moved file to ${pathToFile}.`);
+			}).catch((_) => {
+				new Notice(`Unable to move file to ${pathToFile}.`);
+			});
 		}
+		return false;
 	}
 
 	private async moveFileAndCreateFolder(file: TAbstractFile, newPath: string): Promise<void>{
@@ -131,6 +144,20 @@ export default class ParaShortcutsPlugin extends Plugin {
 				resolve();
 			}
 		});
+	}
+
+
+	private findParaTypeInPath(folder: TFolder): ParaType | null{
+		var type: ParaType | null = null;
+		this.settings.folders.forEach((val, key)=> {
+			if (folder.name === val){
+				type = key;
+			}
+		});
+		if(type === null && !folder.isRoot()){
+			type = this.findParaTypeInPath(folder.parent);
+		}
+		return type;
 	}
 
 	/**
@@ -180,5 +207,8 @@ export default class ParaShortcutsPlugin extends Plugin {
 		return true;
 	}
 
+	private createMetaHeader(): string{
+		let now = new Date();
+		return `createdAt: ${now.toISOString().split('T')[0]}\n\n---`;
+	}
 }
-
