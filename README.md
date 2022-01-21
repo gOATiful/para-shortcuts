@@ -5,7 +5,7 @@ This plugin serves usefull commands to setup and manage your knowledge using the
 ## The PARA Method
 A full article on the PARA method and it's benefits can be found on this [blog post](https://fortelabs.co/blog/para/) by Tiago Forte.
 
-Brief summery of PARA's-folders:
+Brief summery of the PARA folder structure:
 - **Projects**: A project is "a series of tasks linked to a goal, with a deadline".
 - **Area**: An area of responsibility is "a sphere of activity with a standard to be maintained over time".
 - **Resource**: A resource is "a topic or theme of ongoing interest". 
