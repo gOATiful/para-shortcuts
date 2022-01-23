@@ -1,14 +1,14 @@
 {
 	"name": "para-shortcuts",
-	"version": "0.1.0",
-	"description": "This plugin provides usefull commands and shortcuts to manage your knowledge using the PARA method.",
+	"version": "1.0.1",
+	"description": "This plugin serves usefull commands to setup and manage your knowledge using the PARA method.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "node esbuild.config.mjs production"
 	},
-	"keywords": [],
-	"author": "",
+	"keywords": ["obsidian-plugin", "PARA", "Knowledge management"],
+	"author": "gOAT",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^16.11.6",
