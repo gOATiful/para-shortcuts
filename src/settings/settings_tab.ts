@@ -11,20 +11,20 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for PARA-Shortcuts.'});
+		containerEl.createEl('h2', { text: 'Settings for PARA-Shortcuts.' });
 
 		new Setting(containerEl)
 			.setName('Project folder')
 			.setDesc('the folder name for your "Projects"')
 			.addText(text => text
 				.setPlaceholder('eg. Projects')
-				.setValue(this.plugin.settings.folders.get(ParaType.project))
+				.setValue(this.plugin.settings.folderProject)
 				.onChange(async (value) => {
-					this.plugin.settings.folders.set(ParaType.project, value);
+					this.plugin.settings.folderProject = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -32,9 +32,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Area of Resposibility"')
 			.addText(text => text
 				.setPlaceholder('eg. Area')
-				.setValue(this.plugin.settings.folders.get(ParaType.area_of_responsibility))
+				.setValue(this.plugin.settings.folderArea)
 				.onChange(async (value) => {
-					this.plugin.settings.folders.set(ParaType.area_of_responsibility, value);
+					this.plugin.settings.folderArea = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -42,9 +42,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Resources"')
 			.addText(text => text
 				.setPlaceholder('eg. Resources')
-				.setValue(this.plugin.settings.folders.get(ParaType.resources))
+				.setValue(this.plugin.settings.folderResource)
 				.onChange(async (value) => {
-					this.plugin.settings.folders.set(ParaType.resources, value);
+					this.plugin.settings.folderResource = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -52,9 +52,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Archive"')
 			.addText(text => text
 				.setPlaceholder('eg. Archive')
-				.setValue(this.plugin.settings.folders.get(ParaType.archive))
+				.setValue(this.plugin.settings.folderArchive)
 				.onChange(async (value) => {
-					this.plugin.settings.folders.set(ParaType.archive, value);
+					this.plugin.settings.folderArchive = value;
 					await this.plugin.saveSettings();
 				}));
 	}

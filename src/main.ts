@@ -11,6 +11,7 @@ const DATE_FORMAT = "YYYY-MM-DD";
 
 export default class ParaShortcutsPlugin extends Plugin {
 	settings: Settings;
+	private folderMapping: Map<ParaType, string>;
 
 	async onload() {
 		await this.loadSettings();
@@ -43,11 +44,14 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		let loadedData = await this.loadData();
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+		this.folderMapping = this.loadSettingsToMap(this.settings);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		this.folderMapping = this.loadSettingsToMap(this.settings);
 	}
 
 	/**
@@ -56,7 +60,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @param filename the name of the created file
 	 */
 	public async createEntryByType(type: ParaType, filename = 'untitled.md') {
-		let folderName = this.settings.folders.get(type);
+		let folderName = this.folderMapping.get(type);
 		let rootFolderChildren = this.app.vault.getRoot().children;
 		let selectedFolder = rootFolderChildren.find(ele => ele.name === folderName)
 		if (selectedFolder !== undefined) {
@@ -93,7 +97,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 			let currentFolder = activeFile.parent;
 			let paraType = this.findParaTypeInPath(currentFolder);
 			if (paraType != null) {
-				let paraFolder = this.settings.folders.get(paraType);
+				let paraFolder = this.folderMapping.get(paraType);
 				let newFilePath = normalizePath([paraFolder, activeFile.name].join("/"));
 				this.moveFileAndCreateFolder(activeFile, newFilePath).then(() => {
 					new Notice(`Restored file to ${newFilePath}`);
@@ -115,8 +119,8 @@ export default class ParaShortcutsPlugin extends Plugin {
 				return paraType != ParaType.archive;
 			}
 			// move file to archive
-			let archiveFolderName = this.settings.folders.get(ParaType.archive);
-			let subfolderName = this.settings.folders.get(paraType);
+			let archiveFolderName = this.folderMapping.get(ParaType.archive);
+			let subfolderName = this.folderMapping.get(paraType);
 			let pathToFile = normalizePath([this.app.vault.getRoot().name, archiveFolderName, subfolderName, activeFile.name].join("/"))
 			this.moveFileAndCreateFolder(activeFile, pathToFile).then(() => {
 				new Notice(`Moved file to ${pathToFile}.`);
@@ -141,7 +145,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 
 	private findParaTypeInPath(folder: TFolder): ParaType | null {
 		var type: ParaType | null = null;
-		this.settings.folders.forEach((val, key) => {
+		this.folderMapping.forEach((val, key) => {
 			if (folder.name === val) {
 				type = key;
 			}
@@ -159,7 +163,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 */
 	private findTopelevelParaTypeInPath(folder: TFolder): ParaType | null {
 		var type: ParaType | null = null;
-		this.settings.folders.forEach((val, key) => {
+		this.folderMapping.forEach((val, key) => {
 			if (folder.name === val) {
 				type = key;
 			}
@@ -175,13 +179,13 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private async createParaFolders(): Promise<void> {
-		for (let foldername of this.settings.folders.values()) {
+		for (let foldername of this.folderMapping.values()) {
 			await this.app.vault.createFolder(foldername);
 		}
 	}
 
 	private isParaVault(): boolean {
-		let neededFolders = this.settings.folders.values();
+		let neededFolders = "test"// this.settings.folders.values();
 		let root = this.app.vault.getRoot();
 		for (let i of neededFolders) {
 			let found = root.children.find((elem) => i === elem.name);
@@ -208,5 +212,14 @@ export default class ParaShortcutsPlugin extends Plugin {
 			throw new Error("No directory found in path");
 		}
 		return path.slice(0, lastSlashIdx);
+	}
+
+	private loadSettingsToMap(settings: Settings): Map<ParaType, string> {
+		return new Map([
+			[ParaType.project, settings.folderProject],
+			[ParaType.area_of_responsibility, settings.folderArea],
+			[ParaType.resources, settings.folderResource],
+			[ParaType.archive, settings.folderArchive]
+		]);
 	}
 }
