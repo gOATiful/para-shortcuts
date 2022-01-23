@@ -1,7 +1,7 @@
 {
 	"id": "para-shortcuts",
 	"name": "PARA Shortcuts",
-	"version": "1.0.1",
+	"version": "1.0.3",
 	"minAppVersion": "0.12.0",
 	"description": "This plugin serves usefull commands to setup and manage your knowledge using the PARA method.",
 	"author": "gOAT",

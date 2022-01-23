@@ -1,14 +1,14 @@
-import { ParaType } from "para_types";
 
 export interface Settings {
-	folders: Map<ParaType, string>;
+    folderProject: string,
+    folderArea: string,
+    folderResource: string,
+    folderArchive: string,
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-	folders: new Map<ParaType, string>([
-        [ParaType.project, "1-Project"],
-        [ParaType.area_of_responsibility, "2-Area"],
-        [ParaType.resources, "3-Resource"],
-        [ParaType.archive, "4-Archive"],
-    ]),
+    folderProject: "1-Project",
+    folderArea: "2-Area",
+    folderResource: "3-Resource",
+    folderArchive: "4-Archive",
 };
