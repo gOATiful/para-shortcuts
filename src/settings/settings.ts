@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	folders: new Map<ParaType, string>([
         [ParaType.project, "1-Project"],
         [ParaType.area_of_responsibility, "2-Area"],
-        [ParaType.resources, "3-Recource"],
+        [ParaType.resources, "3-Resource"],
         [ParaType.archive, "4-Archive"],
     ]),
 };
