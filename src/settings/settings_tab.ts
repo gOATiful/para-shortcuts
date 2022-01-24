@@ -22,9 +22,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Projects"')
 			.addText(text => text
 				.setPlaceholder('eg. Projects')
-				.setValue(this.plugin.settings.folderProject)
+				.setValue(this.plugin.settings.folders.project)
 				.onChange(async (value) => {
-					this.plugin.settings.folderProject = value;
+					this.plugin.settings.folders.project = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -32,9 +32,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Area of Resposibility"')
 			.addText(text => text
 				.setPlaceholder('eg. Area')
-				.setValue(this.plugin.settings.folderArea)
+				.setValue(this.plugin.settings.folders.area)
 				.onChange(async (value) => {
-					this.plugin.settings.folderArea = value;
+					this.plugin.settings.folders.area = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -42,9 +42,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Resources"')
 			.addText(text => text
 				.setPlaceholder('eg. Resources')
-				.setValue(this.plugin.settings.folderResource)
+				.setValue(this.plugin.settings.folders.resource)
 				.onChange(async (value) => {
-					this.plugin.settings.folderResource = value;
+					this.plugin.settings.folders.resource = value;
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -52,9 +52,9 @@ export class ParaShortcutsSettingTab extends PluginSettingTab {
 			.setDesc('the folder name for your "Archive"')
 			.addText(text => text
 				.setPlaceholder('eg. Archive')
-				.setValue(this.plugin.settings.folderArchive)
+				.setValue(this.plugin.settings.folders.archive)
 				.onChange(async (value) => {
-					this.plugin.settings.folderArchive = value;
+					this.plugin.settings.folders.archive = value;
 					await this.plugin.saveSettings();
 				}));
 	}
