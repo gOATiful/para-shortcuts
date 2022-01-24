@@ -1,6 +1,6 @@
 import { moment, normalizePath, Notice, Plugin, TAbstractFile, TextFileView, TFolder } from 'obsidian';
 
-import { Settings, DEFAULT_SETTINGS } from 'settings/settings';
+import { Settings, DEFAULT_SETTINGS, settingsToMap } from 'settings/settings';
 import { ParaShortcutsSettingTab } from 'settings/settings_tab';
 import { CreateNewEntryModal } from 'modals/new_entry_modal';
 import { ParaType } from 'para_types';
@@ -46,12 +46,12 @@ export default class ParaShortcutsPlugin extends Plugin {
 	async loadSettings() {
 		let loadedData = await this.loadData();
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-		this.folderMapping = this.loadSettingsToMap(this.settings);
+		this.folderMapping = settingsToMap(this.settings);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-		this.folderMapping = this.loadSettingsToMap(this.settings);
+		this.folderMapping = settingsToMap(this.settings);
 	}
 
 	/**
@@ -92,19 +92,17 @@ export default class ParaShortcutsPlugin extends Plugin {
 		if (activeFile !== null) {
 			let toplevelParatype = this.findTopelevelParaTypeInPath(activeFile.parent);
 			if (checking) {
+				// Command is only active if file is in archive folder
 				return toplevelParatype === ParaType.archive;
 			}
-			let currentFolder = activeFile.parent;
-			let paraType = this.findParaTypeInPath(currentFolder);
-			if (paraType != null) {
-				let paraFolder = this.folderMapping.get(paraType);
-				let newFilePath = normalizePath([paraFolder, activeFile.name].join("/"));
-				this.moveFileAndCreateFolder(activeFile, newFilePath).then(() => {
-					new Notice(`Restored file to ${newFilePath}`);
-				}).catch((_) => {
-					new Notice(`Unable to resotre file`);
-				});
-			}
+			let archiveFolderName = this.folderMapping.get(ParaType.archive);
+			let newFilePath = normalizePath(activeFile.path.replace(archiveFolderName, ""));
+			console.log(newFilePath);
+			this.moveFileAndCreateFolder(activeFile, newFilePath).then(() => {
+				new Notice(`Restored file to ${newFilePath}`);
+			}).catch((_) => {
+				new Notice(`Unable to resotre file`);
+			});
 		}
 
 		return false;
@@ -120,8 +118,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 			}
 			// move file to archive
 			let archiveFolderName = this.folderMapping.get(ParaType.archive);
-			let subfolderName = this.folderMapping.get(paraType);
-			let pathToFile = normalizePath([this.app.vault.getRoot().name, archiveFolderName, subfolderName, activeFile.name].join("/"))
+			let pathToFile = normalizePath([this.app.vault.getRoot().name, archiveFolderName, activeFile.path].join("/"))
 			this.moveFileAndCreateFolder(activeFile, pathToFile).then(() => {
 				new Notice(`Moved file to ${pathToFile}.`);
 			}).catch((_) => {
@@ -137,6 +134,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		} catch (error) {
 			// try to create folder and try again
 			let pathToFolder = this.getDirName(newPath);
+			console.log(pathToFolder);
 			await this.app.vault.createFolder(pathToFolder);
 			await this.app.fileManager.renameFile(file, newPath);
 		}
@@ -185,7 +183,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private isParaVault(): boolean {
-		let neededFolders = "test"// this.settings.folders.values();
+		let neededFolders = this.folderMapping.values();
 		let root = this.app.vault.getRoot();
 		for (let i of neededFolders) {
 			let found = root.children.find((elem) => i === elem.name);
@@ -214,12 +212,4 @@ export default class ParaShortcutsPlugin extends Plugin {
 		return path.slice(0, lastSlashIdx);
 	}
 
-	private loadSettingsToMap(settings: Settings): Map<ParaType, string> {
-		return new Map([
-			[ParaType.project, settings.folderProject],
-			[ParaType.area_of_responsibility, settings.folderArea],
-			[ParaType.resources, settings.folderResource],
-			[ParaType.archive, settings.folderArchive]
-		]);
-	}
 }
