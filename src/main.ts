@@ -97,7 +97,6 @@ export default class ParaShortcutsPlugin extends Plugin {
 			}
 			let archiveFolderName = this.folderMapping.get(ParaType.archive);
 			let newFilePath = normalizePath(activeFile.path.replace(archiveFolderName, ""));
-			console.log(newFilePath);
 			this.moveFileAndCreateFolder(activeFile, newFilePath).then(() => {
 				new Notice(`Restored file to ${newFilePath}`);
 			}).catch((_) => {
@@ -134,7 +133,6 @@ export default class ParaShortcutsPlugin extends Plugin {
 		} catch (error) {
 			// try to create folder and try again
 			let pathToFolder = this.getDirName(newPath);
-			console.log(pathToFolder);
 			await this.app.vault.createFolder(pathToFolder);
 			await this.app.fileManager.renameFile(file, newPath);
 		}

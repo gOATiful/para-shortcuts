@@ -1,6 +1,6 @@
 export enum ParaType{
-	project = "Project", 
-	area_of_responsibility = "Area of Responsibility", 
-	resources = "Resource",
+	projects = "Projects", 
+	areas_of_responsibility = "Areas of Responsibility", 
+	resources = "Resources",
 	archive = "Archive"
 }

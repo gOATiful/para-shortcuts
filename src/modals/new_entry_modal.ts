@@ -10,7 +10,7 @@ export class CreateNewEntryModal extends FuzzySuggestModal<ParaType> {
 	constructor(app: App, plugin: ParaShortcutsPlugin) {
 		super(app);
 		this.plugin = plugin;
-		this.setPlaceholder("Create a new entry for:");
+		this.setPlaceholder("Create a new entry in:");
 	}
 	
 	onChooseItem(item: ParaType, evt: MouseEvent | KeyboardEvent): void {
@@ -18,7 +18,7 @@ export class CreateNewEntryModal extends FuzzySuggestModal<ParaType> {
 	}
 
 	getItems(): ParaType[] {
-		return [ParaType.project, ParaType.area_of_responsibility, ParaType.resources];
+		return [ParaType.projects, ParaType.areas_of_responsibility, ParaType.resources];
 	}
 	
 	getItemText(item: ParaType): string {
