@@ -1,6 +1,6 @@
 # para-shortcuts
 
-This plugin serves usefull commands to setup and manage your knowledge using the PARA method.
+This plugin serves useful commands to setup and manage your knowledge using the PARA method.
 
 ## The PARA Method
 A full article on the PARA method and it's benefits can be found on this [blog post](https://fortelabs.co/blog/para/) by Tiago Forte.
@@ -24,7 +24,7 @@ Overview:
 - [Restore entry from archive](restore-entry-from-archive)
 
 ### Init Vault
-Para follows a simple folder structure to organize your knowlage.  
+Para follows a simple folder structure to organize your knowledge.  
 This command creates the folders accordingly in the root of the vault.
 
 ### Create new entry
