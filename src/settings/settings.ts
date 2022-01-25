@@ -11,9 +11,9 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
     folders: {
-        project: "1-Project",
-        area: "2-Area",
-        resource: "3-Resource",
+        project: "1-Projects",
+        area: "2-Areas",
+        resource: "3-Resources",
         archive: "4-Archive",
     }
 };
@@ -23,8 +23,8 @@ export const DEFAULT_SETTINGS: Settings = {
  */
 export function settingsToMap(settings: Settings) {
     return new Map([
-        [ParaType.project, settings.folders.project],
-        [ParaType.area_of_responsibility, settings.folders.area],
+        [ParaType.projects, settings.folders.project],
+        [ParaType.areas_of_responsibility, settings.folders.area],
         [ParaType.resources, settings.folders.resource],
         [ParaType.archive, settings.folders.archive]
     ]);
