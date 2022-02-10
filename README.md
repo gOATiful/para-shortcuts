@@ -41,3 +41,6 @@ It restores the selected file back to its original PARA-folder with its subfolde
 
 ## Further Improvements
 If you would like to see additional features in this plug-in, feel free to hand in a feature request in the issue section.
+
+## Support
+<a href="https://www.buymeacoffee.com/gOATifulCode" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>  
