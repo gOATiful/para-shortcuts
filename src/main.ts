@@ -1,13 +1,20 @@
-import { moment, normalizePath, Notice, Plugin, TAbstractFile, TextFileView, TFolder } from 'obsidian';
+import {
+	moment,
+	normalizePath,
+	Notice,
+	Plugin,
+	TAbstractFile,
+	TextFileView,
+	TFolder,
+} from "obsidian";
 
-import { Settings, DEFAULT_SETTINGS, settingsToMap } from 'settings/settings';
-import { ParaShortcutsSettingTab } from 'settings/settings_tab';
-import { CreateNewEntryModal } from 'modals/new_entry_modal';
-import { ParaType } from 'para_types';
-
+import { Settings, DEFAULT_SETTINGS, settingsToMap } from "settings/settings";
+import { ParaShortcutsSettingTab } from "settings/settings_tab";
+import { CreateNewEntryModal } from "modals/new_entry_modal";
+import { isParaType, ParaType } from "para_types";
 
 const DATE_FORMAT = "YYYY-MM-DD";
-
+const POSTPONE_FOLDER_NAME = "postponed";
 
 export default class ParaShortcutsPlugin extends Plugin {
 	settings: Settings;
@@ -18,30 +25,44 @@ export default class ParaShortcutsPlugin extends Plugin {
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'create-new-entry',
-			name: 'Create new entry',
+			id: "create-new-entry",
+			name: "Create new entry",
 			callback: () => this.commandCreateNewEntry(),
 		});
 		this.addCommand({
-			id: 'init-vault',
-			name: 'Init vault with PARA folders',
+			id: "init-vault",
+			name: "Init vault with PARA folders",
 			callback: () => this.commandInitPara(),
 		});
 		this.addCommand({
-			id: 'move-to-archive',
-			name: 'Move current file to archive',
-			checkCallback: (checking: boolean) => this.commandMoveToArchive(checking),
+			id: "move-to-archive",
+			name: "Move current file to archive",
+			checkCallback: (checking: boolean) =>
+				this.commandMoveToArchive(checking),
 		});
 		this.addCommand({
-			id: 'restore-from-archive',
-			name: 'Restore entry from archive',
-			checkCallback: (checking: boolean) => this.commandRestoreFromArchive(checking),
+			id: "restore-from-archive",
+			name: "Restore entry from archive",
+			checkCallback: (checking: boolean) =>
+				this.commandRestoreFromArchive(checking),
 		});
+		this.addCommand({
+			id: "postpone-entry",
+			name: "Postpone this entry",
+			checkCallback: (checking: boolean) =>
+				this.commandPostponeEntry(checking),
+		});
+		this.addCommand({
+			id: "reschedule-entry",
+			name: "Reschedule this entry",
+			checkCallback: (checking: boolean) =>
+				this.commandRescheduleEntry(checking),
+		});
+
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
 
-	onunload() {
-	}
+	onunload() {}
 
 	async loadSettings() {
 		let loadedData = await this.loadData();
@@ -59,14 +80,22 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @param type specifies the folder in which the file will be created
 	 * @param filename the name of the created file
 	 */
-	public async createEntryByType(type: ParaType, filename = 'untitled.md') {
+	public async createEntryByType(type: ParaType, filename = "untitled.md") {
 		let folderName = this.folderMapping.get(type);
 		let rootFolderChildren = this.app.vault.getRoot().children;
-		let selectedFolder = rootFolderChildren.find(ele => ele.name === folderName)
+		let selectedFolder = rootFolderChildren.find(
+			(ele) => ele.name === folderName
+		);
 		if (selectedFolder !== undefined) {
 			let filepath = normalizePath([folderName, filename].join("/"));
-			let createdFile = await this.app.vault.create(filepath, this.createMetaHeader());
-			await this.app.workspace.activeLeaf.openFile(createdFile, TextFileView); // open the created file
+			let createdFile = await this.app.vault.create(
+				filepath,
+				this.createMetaHeader()
+			);
+			await this.app.workspace.activeLeaf.openFile(
+				createdFile,
+				TextFileView
+			); // open the created file
 		}
 	}
 
@@ -80,54 +109,143 @@ export default class ParaShortcutsPlugin extends Plugin {
 			new Notice("PARA already initialized!");
 			return;
 		}
-		this.createParaFolders().then(() => {
-			new Notice("Vaul successful initialized!");
-		}).catch(_ => {
-			new Notice("Error creating PARA folders");
-		});
+		this.createParaFolders()
+			.then(() => {
+				new Notice("Vaul successful initialized!");
+			})
+			.catch((_) => {
+				new Notice("Error creating PARA folders");
+			});
 	}
 
+	/**
+	 * Restores the open file back to its corresponding para folder
+	 * @param checking
+	 * @returns
+	 */
 	private commandRestoreFromArchive(checking: boolean): boolean | void {
 		let activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
-			let toplevelParatype = this.findTopelevelParaTypeInPath(activeFile.parent);
 			if (checking) {
 				// Command is only active if file is in archive folder
-				return toplevelParatype === ParaType.archive;
+				return this.isFolderInParaType(
+					activeFile.parent,
+					ParaType.archive
+				);
 			}
 			let archiveFolderName = this.folderMapping.get(ParaType.archive);
-			let newFilePath = normalizePath(activeFile.path.replace(archiveFolderName, ""));
-			this.moveFileAndCreateFolder(activeFile, newFilePath).then(() => {
-				new Notice(`Restored file to ${newFilePath}`);
-			}).catch((_) => {
-				new Notice(`Unable to resotre file`);
-			});
+			let newFilePath = normalizePath(
+				activeFile.path.replace(archiveFolderName, "")
+			);
+			let folderToDelete = activeFile.parent;
+			this.moveFileAndCreateFolder(activeFile, newFilePath)
+				.then(() => {
+					new Notice(`Restored file to ${newFilePath}`);
+					this.deleteFolderIfEmpty(folderToDelete);
+				})
+				.catch((_) => {
+					new Notice(`Unable to resotre file`);
+				});
 		}
-
-		return false;
 	}
 
-	private commandMoveToArchive(checking: boolean): boolean {
+	/**
+	 * Moves out of the postponed into its original folder.
+	 * @param checking
+	 * @returns
+	 */
+	private commandRescheduleEntry(checking: boolean): boolean | void {
 		let activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
-			let paraType = this.findTopelevelParaTypeInPath(activeFile.parent);
+			if (checking) {
+				return (
+					!this.isFolderInParaType(
+						activeFile.parent,
+						ParaType.archive
+					) && activeFile.path?.contains(POSTPONE_FOLDER_NAME)
+				);
+			}
+		}
+		let newFilePath = normalizePath(
+			activeFile.path.replace(`/${POSTPONE_FOLDER_NAME}`, "")
+		);
+		let folderToDelete = activeFile.parent;
+		this.moveFileAndCreateFolder(activeFile, newFilePath)
+			.then(() => {
+				new Notice(`Rescheduled ${newFilePath}.`);
+				this.deleteFolderIfEmpty(folderToDelete);
+			})
+			.catch((_) => {
+				new Notice(`Unable to move file to ${newFilePath}.`);
+			});
+	}
+
+	private commandPostponeEntry(checking: boolean): boolean | void {
+		let activeFile = this.app.workspace.getActiveFile();
+		if (activeFile !== null) {
+			if (checking) {
+				return (
+					!this.isFolderInParaType(
+						activeFile.parent,
+						ParaType.archive
+					) && !activeFile.path?.contains(POSTPONE_FOLDER_NAME)
+				);
+			}
+			let paratype = this.findParaTypeInPath(activeFile.parent);
+			if (paratype != null) {
+				let foldername = this.folderMapping.get(paratype);
+				let newFilePath = normalizePath(
+					activeFile.path.replace(
+						foldername,
+						foldername + `/${POSTPONE_FOLDER_NAME}`
+					)
+				);
+				let folderToDelete = activeFile.parent;
+				this.moveFileAndCreateFolder(activeFile, newFilePath)
+					.then(() => {
+						new Notice(`Postponed ${newFilePath}.`);
+						this.deleteFolderIfEmpty(folderToDelete);
+					})
+					.catch((_) => {
+						new Notice(`Unable to move file to ${newFilePath}.`);
+					});
+			}
+		}
+	}
+
+	private commandMoveToArchive(checking: boolean): boolean | void {
+		let activeFile = this.app.workspace.getActiveFile();
+		if (activeFile !== null) {
 			if (checking) {
 				// enable command if not in archive
-				return paraType != ParaType.archive;
+				return !this.isFolderInParaType(
+					activeFile.parent,
+					ParaType.archive
+				);
 			}
 			// move file to archive
 			let archiveFolderName = this.folderMapping.get(ParaType.archive);
-			let pathToFile = normalizePath([this.app.vault.getRoot().name, archiveFolderName, activeFile.path].join("/"))
-			this.moveFileAndCreateFolder(activeFile, pathToFile).then(() => {
-				new Notice(`Moved file to ${pathToFile}.`);
-			}).catch((_) => {
-				new Notice(`Unable to move file to ${pathToFile}.`);
-			});
+			let pathToFile = normalizePath(
+				[
+					this.app.vault.getRoot().name,
+					archiveFolderName,
+					activeFile.path,
+				].join("/")
+			);
+			this.moveFileAndCreateFolder(activeFile, pathToFile)
+				.then(() => {
+					new Notice(`Moved file to ${pathToFile}.`);
+				})
+				.catch((_) => {
+					new Notice(`Unable to move file to ${pathToFile}.`);
+				});
 		}
-		return false;
 	}
 
-	private async moveFileAndCreateFolder(file: TAbstractFile, newPath: string): Promise<void> {
+	private async moveFileAndCreateFolder(
+		file: TAbstractFile,
+		newPath: string
+	): Promise<void> {
 		try {
 			await this.app.fileManager.renameFile(file, newPath);
 		} catch (error) {
@@ -138,6 +256,10 @@ export default class ParaShortcutsPlugin extends Plugin {
 		}
 	}
 
+	private isFolderInParaType(folder: TFolder, paraType: ParaType): boolean {
+		let paraTypeOfFolder = this.findTopelevelParaTypeInPath(folder);
+		return paraTypeOfFolder == paraType;
+	}
 
 	private findParaTypeInPath(folder: TFolder): ParaType | null {
 		var type: ParaType | null = null;
@@ -153,8 +275,8 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	/**
-	 * 
-	 * @param file 
+	 *
+	 * @param file
 	 * @returns the ParaType if found, returns null if not
 	 */
 	private findTopelevelParaTypeInPath(folder: TFolder): ParaType | null {
@@ -166,7 +288,9 @@ export default class ParaShortcutsPlugin extends Plugin {
 		});
 		if (!folder.isRoot()) {
 			// always prioritize found type from parent to avoid nested folder issue
-			let foundTypeInParent = this.findTopelevelParaTypeInPath(folder.parent);
+			let foundTypeInParent = this.findTopelevelParaTypeInPath(
+				folder.parent
+			);
 			if (foundTypeInParent != null) {
 				type = foundTypeInParent;
 			}
@@ -210,4 +334,17 @@ export default class ParaShortcutsPlugin extends Plugin {
 		return path.slice(0, lastSlashIdx);
 	}
 
+	/**
+	 * Deletes given folder recursivly to the next para type if empty.
+	 * @param folder
+	 */
+	private deleteFolderIfEmpty(folder: TFolder) {
+		if (isParaType(folder.name)) {
+			return;
+		}
+		if (folder.children.length === 0) {
+			this.app.vault.delete(folder);
+			this.deleteFolderIfEmpty(folder.parent);
+		}
+	}
 }

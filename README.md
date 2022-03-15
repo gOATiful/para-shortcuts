@@ -22,6 +22,7 @@ Overview:
 - [Create new entry](create-new-entry)
 - [Move to archive](move-to-archive)
 - [Restore entry from archive](restore-entry-from-archive)
+- [Postpone an entry](postpone-an-entry)
 
 ### Init Vault
 Para follows a simple folder structure to organize your knowledge.  
@@ -38,6 +39,14 @@ Note that this command is only present in not 'archive'-folders.
 ### Restore entry from archive
 This command is only present for files in the 'archive'-folder.  
 It restores the selected file back to its original PARA-folder with its subfolders.
+
+### Postpone an entry
+You can postpone an entry with the 'postpone this entry'-command.
+The currently opened file will be move into a 'postponed' folder in the same para-folder.
+
+### Reschedule a postponed entry
+An entry in a 'postponed'-folder can be restored by the 'Reschedule this entry'-command.
+If the remaining parent folder is empty it will be deleted.
 
 ## Further Improvements
 If you would like to see additional features in this plug-in, feel free to hand in a feature request in the issue section.
