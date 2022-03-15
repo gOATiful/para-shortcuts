@@ -4,3 +4,12 @@ export enum ParaType{
 	resources = "Resources",
 	archive = "Archive"
 }
+
+export function isParaType(s: String): boolean{
+	for (const val in ParaType){
+		if (val === s){
+			return true;
+		}
+	}
+	return false;
+}
