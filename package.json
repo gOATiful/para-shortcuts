@@ -1,6 +1,6 @@
 {
 	"name": "para-shortcuts",
-	"version": "1.0.4",
+	"version": "1.0.6",
 	"description": "This plugin serves usefull commands to setup and manage your knowledge using the PARA method.",
 	"main": "main.js",
 	"scripts": {
