@@ -134,7 +134,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		}
 		this.createParaFolders()
 			.then(() => {
-				new Notice("Vaul successful initialized!");
+				new Notice("Vault successfuly initialized!");
 			})
 			.catch((_) => {
 				new Notice("Error creating PARA folders");
