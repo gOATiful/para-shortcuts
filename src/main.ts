@@ -59,6 +59,29 @@ export default class ParaShortcutsPlugin extends Plugin {
 				this.commandRescheduleEntry(checking),
 		});
 
+		this.registerEvent(
+			this.app.workspace.on("file-menu", (menu, file) => {
+				if (this.canMoveToArchive(file)) {
+					menu.addItem((item) => {
+						item
+							.setTitle("Move to archive")
+							.onClick(() => {
+								this.moveToArchive(file);
+							})
+					});
+				}
+				if (this.canRestoreFromArchive(file)) {
+					menu.addItem((item) => {
+						item
+							.setTitle("Restore from archive")
+							.onClick(() => {
+								this.restoreFromArchive(file);
+							})
+					});
+				}
+			})
+		);
+
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
 
