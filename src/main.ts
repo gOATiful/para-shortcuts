@@ -59,6 +59,29 @@ export default class ParaShortcutsPlugin extends Plugin {
 				this.commandRescheduleEntry(checking),
 		});
 
+		this.registerEvent(
+			this.app.workspace.on("file-menu", (menu, file) => {
+				if (this.canMoveToArchive(file)) {
+					menu.addItem((item) => {
+						item
+							.setTitle("Move to archive")
+							.onClick(() => {
+								this.moveToArchive(file);
+							})
+					});
+				}
+				if (this.canRestoreFromArchive(file)) {
+					menu.addItem((item) => {
+						item
+							.setTitle("Restore from archive")
+							.onClick(() => {
+								this.restoreFromArchive(file);
+							})
+					});
+				}
+			})
+		);
+
 		this.addSettingTab(new ParaShortcutsSettingTab(this.app, this));
 	}
 
@@ -111,10 +134,27 @@ export default class ParaShortcutsPlugin extends Plugin {
 		}
 		this.createParaFolders()
 			.then(() => {
-				new Notice("Vaul successful initialized!");
+				new Notice("Vault successfuly initialized!");
 			})
 			.catch((_) => {
 				new Notice("Error creating PARA folders");
+			});
+	}
+
+	private canRestoreFromArchive(file: TAbstractFile): boolean {
+		return this.isFolderInParaType(file.parent, ParaType.archive);
+	}
+
+	private restoreFromArchive(file: TAbstractFile): void {
+		let archiveFolderName = this.folderMapping.get(ParaType.archive);
+		let newFilePath = normalizePath(file.path.replace(archiveFolderName, ""));
+		this.moveFileAndCreateFolder(file, newFilePath)
+			.then(() => {
+				new Notice(`Restored file to ${newFilePath}`);
+				this.deleteFolderIfEmpty(file.parent);
+			})
+			.catch((_) => {
+				new Notice(`Unable to resotre file`);
 			});
 	}
 
@@ -128,24 +168,9 @@ export default class ParaShortcutsPlugin extends Plugin {
 		if (activeFile !== null) {
 			if (checking) {
 				// Command is only active if file is in archive folder
-				return this.isFolderInParaType(
-					activeFile.parent,
-					ParaType.archive
-				);
+				return this.canRestoreFromArchive(activeFile);
 			}
-			let archiveFolderName = this.folderMapping.get(ParaType.archive);
-			let newFilePath = normalizePath(
-				activeFile.path.replace(archiveFolderName, "")
-			);
-			let folderToDelete = activeFile.parent;
-			this.moveFileAndCreateFolder(activeFile, newFilePath)
-				.then(() => {
-					new Notice(`Restored file to ${newFilePath}`);
-					this.deleteFolderIfEmpty(folderToDelete);
-				})
-				.catch((_) => {
-					new Notice(`Unable to resotre file`);
-				});
+			this.restoreFromArchive(activeFile);
 		}
 	}
 
@@ -213,32 +238,35 @@ export default class ParaShortcutsPlugin extends Plugin {
 		}
 	}
 
+	private canMoveToArchive(file: TAbstractFile): boolean {
+		return !this.isFolderInParaType(file.parent, ParaType.archive);
+	}
+
+	private moveToArchive(file: TAbstractFile): void {
+		let archiveFolderName = this.folderMapping.get(ParaType.archive);
+		let pathToFile = normalizePath(
+			[
+				this.app.vault.getRoot().name,
+				archiveFolderName,
+				file.path,
+			].join("/")
+		);
+		this.moveFileAndCreateFolder(file, pathToFile)
+			.then(() => {
+				new Notice(`Moved file to ${pathToFile}.`);
+			})
+			.catch((_) => {
+				new Notice(`Unable to move file to ${pathToFile}.`);
+			});
+	}
+
 	private commandMoveToArchive(checking: boolean): boolean | void {
 		let activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
 			if (checking) {
-				// enable command if not in archive
-				return !this.isFolderInParaType(
-					activeFile.parent,
-					ParaType.archive
-				);
+				return this.canMoveToArchive(activeFile);
 			}
-			// move file to archive
-			let archiveFolderName = this.folderMapping.get(ParaType.archive);
-			let pathToFile = normalizePath(
-				[
-					this.app.vault.getRoot().name,
-					archiveFolderName,
-					activeFile.path,
-				].join("/")
-			);
-			this.moveFileAndCreateFolder(activeFile, pathToFile)
-				.then(() => {
-					new Notice(`Moved file to ${pathToFile}.`);
-				})
-				.catch((_) => {
-					new Notice(`Unable to move file to ${pathToFile}.`);
-				});
+			this.moveToArchive(activeFile);
 		}
 	}
 
