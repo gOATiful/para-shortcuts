@@ -5,7 +5,9 @@
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "node esbuild.config.mjs production"
+		"build": "node esbuild.config.mjs production",
+		"lint": "eslint src/*.ts",
+		"test": "npm run lint"
 	},
 	"keywords": ["obsidian-plugin", "PARA", "Knowledge management"],
 	"author": "gOAT",
