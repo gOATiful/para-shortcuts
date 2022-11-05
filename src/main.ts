@@ -88,7 +88,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	onunload() {}
 
 	async loadSettings() {
-		let loadedData = await this.loadData();
+		const loadedData = await this.loadData();
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 		this.folderMapping = settingsToMap(this.settings);
 	}
@@ -104,14 +104,14 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @param filename the name of the created file
 	 */
 	public async createEntryByType(type: ParaType, filename = "untitled.md") {
-		let folderName = this.folderMapping.get(type);
-		let rootFolderChildren = this.app.vault.getRoot().children;
-		let selectedFolder = rootFolderChildren.find(
+		const folderName = this.folderMapping.get(type);
+		const rootFolderChildren = this.app.vault.getRoot().children;
+		const selectedFolder = rootFolderChildren.find(
 			(ele) => ele.name === folderName
 		);
 		if (selectedFolder !== undefined) {
-			let filepath = normalizePath([folderName, filename].join("/"));
-			let createdFile = await this.app.vault.create(
+			const filepath = normalizePath([folderName, filename].join("/"));
+			const createdFile = await this.app.vault.create(
 				filepath,
 				this.createMetaHeader()
 			);
@@ -123,7 +123,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private commandCreateNewEntry() {
-		let modal = new CreateNewEntryModal(this.app, this);
+		const modal = new CreateNewEntryModal(this.app, this);
 		modal.open();
 	}
 
@@ -146,9 +146,9 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private restoreFromArchive(file: TAbstractFile): void {
-		let archiveFolderName = this.folderMapping.get(ParaType.archive);
-		let newFilePath = normalizePath(file.path.replace(archiveFolderName, ""));
-		let folderToDelete = file.parent;
+		const archiveFolderName = this.folderMapping.get(ParaType.archive);
+		const newFilePath = normalizePath(file.path.replace(archiveFolderName, ""));
+		const folderToDelete = file.parent;
 		this.moveFileAndCreateFolder(file, newFilePath)
 			.then(() => {
 				new Notice(`Restored file to ${newFilePath}`);
@@ -165,7 +165,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @returns
 	 */
 	private commandRestoreFromArchive(checking: boolean): boolean | void {
-		let activeFile = this.app.workspace.getActiveFile();
+		const activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
 			if (checking) {
 				// Command is only active if file is in archive folder
@@ -181,7 +181,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @returns
 	 */
 	private commandRescheduleEntry(checking: boolean): boolean | void {
-		let activeFile = this.app.workspace.getActiveFile();
+		const activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
 			if (checking) {
 				return (
@@ -192,10 +192,10 @@ export default class ParaShortcutsPlugin extends Plugin {
 				);
 			}
 		}
-		let newFilePath = normalizePath(
+		const newFilePath = normalizePath(
 			activeFile.path.replace(`/${POSTPONE_FOLDER_NAME}`, "")
 		);
-		let folderToDelete = activeFile.parent;
+		const folderToDelete = activeFile.parent;
 		this.moveFileAndCreateFolder(activeFile, newFilePath)
 			.then(() => {
 				new Notice(`Rescheduled ${newFilePath}.`);
@@ -207,7 +207,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private commandPostponeEntry(checking: boolean): boolean | void {
-		let activeFile = this.app.workspace.getActiveFile();
+		const activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
 			if (checking) {
 				return (
@@ -217,16 +217,16 @@ export default class ParaShortcutsPlugin extends Plugin {
 					) && !activeFile.path?.contains(POSTPONE_FOLDER_NAME)
 				);
 			}
-			let paratype = this.findParaTypeInPath(activeFile.parent);
+			const paratype = this.findParaTypeInPath(activeFile.parent);
 			if (paratype != null) {
-				let foldername = this.folderMapping.get(paratype);
-				let newFilePath = normalizePath(
+				const foldername = this.folderMapping.get(paratype);
+				const newFilePath = normalizePath(
 					activeFile.path.replace(
 						foldername,
 						foldername + `/${POSTPONE_FOLDER_NAME}`
 					)
 				);
-				let folderToDelete = activeFile.parent;
+				const folderToDelete = activeFile.parent;
 				this.moveFileAndCreateFolder(activeFile, newFilePath)
 					.then(() => {
 						new Notice(`Postponed ${newFilePath}.`);
@@ -244,8 +244,8 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private moveToArchive(file: TAbstractFile): void {
-		let archiveFolderName = this.folderMapping.get(ParaType.archive);
-		let pathToFile = normalizePath(
+		const archiveFolderName = this.folderMapping.get(ParaType.archive);
+		const pathToFile = normalizePath(
 			[
 				this.app.vault.getRoot().name,
 				archiveFolderName,
@@ -262,7 +262,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private commandMoveToArchive(checking: boolean): boolean | void {
-		let activeFile = this.app.workspace.getActiveFile();
+		const activeFile = this.app.workspace.getActiveFile();
 		if (activeFile !== null) {
 			if (checking) {
 				return this.canMoveToArchive(activeFile);
@@ -279,14 +279,14 @@ export default class ParaShortcutsPlugin extends Plugin {
 			await this.app.fileManager.renameFile(file, newPath);
 		} catch (error) {
 			// try to create folder and try again
-			let pathToFolder = this.getDirName(newPath);
+			const pathToFolder = this.getDirName(newPath);
 			await this.app.vault.createFolder(pathToFolder);
 			await this.app.fileManager.renameFile(file, newPath);
 		}
 	}
 
 	private isFolderInParaType(folder: TFolder, paraType: ParaType): boolean {
-		let paraTypeOfFolder = this.findTopelevelParaTypeInPath(folder);
+		const paraTypeOfFolder = this.findTopelevelParaTypeInPath(folder);
 		return paraTypeOfFolder == paraType;
 	}
 
@@ -307,7 +307,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 		let type = this.getTypeFromName(folder.name);
 		if (!folder.isRoot()) {
 			// always prioritize found type from parent to avoid nested folder issue
-			let foundTypeInParent = this.findTopelevelParaTypeInPath(
+			const foundTypeInParent = this.findTopelevelParaTypeInPath(
 				folder.parent
 			);
 			if (foundTypeInParent != null) {
@@ -318,16 +318,16 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private async createParaFolders(): Promise<void> {
-		for (let foldername of this.folderMapping.values()) {
+		for (const foldername of this.folderMapping.values()) {
 			await this.app.vault.createFolder(foldername);
 		}
 	}
 
 	private isParaVault(): boolean {
-		let neededFolders = this.folderMapping.values();
-		let root = this.app.vault.getRoot();
-		for (let i of neededFolders) {
-			let found = root.children.find((elem) => i === elem.name);
+		const neededFolders = this.folderMapping.values();
+		const root = this.app.vault.getRoot();
+		for (const i of neededFolders) {
+			const found = root.children.find((elem) => i === elem.name);
 			if (found === undefined) {
 				return false;
 			}
@@ -336,7 +336,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private createMetaHeader(): string {
-		let today = moment().format(DATE_FORMAT);
+		const today = moment().format(DATE_FORMAT);
 		return `createdAt: ${today}\n\n---\n`;
 	}
 
@@ -345,7 +345,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 			// is already a path return
 			return path;
 		}
-		let lastSlashIdx = path.lastIndexOf("/");
+		const lastSlashIdx = path.lastIndexOf("/");
 		if (lastSlashIdx === -1) {
 			// no slashes found
 			throw new Error("No directory found in path");
@@ -363,14 +363,14 @@ export default class ParaShortcutsPlugin extends Plugin {
 			return;
 		}
 		if (folder.children.length === 0) {
-			let folderToDelete = folder.parent;
+			const folderToDelete = folder.parent;
 			await this.app.vault.delete(folder);
 			return this.deleteFolderIfEmpty(folderToDelete);
 		}
 	}
 
 	private getTypeFromName(name: string): ParaType | null {
-		for (let [key, val] of this.folderMapping.entries()) {
+		for (const [key, val] of this.folderMapping.entries()) {
 			if (name === val) {
 				return key;
 			}
