@@ -11,7 +11,7 @@ import {
 import { Settings, DEFAULT_SETTINGS, settingsToMap } from "settings/settings";
 import { ParaShortcutsSettingTab } from "settings/settings_tab";
 import { CreateNewEntryModal } from "modals/new_entry_modal";
-import { isParaType, ParaType } from "para_types";
+import { ParaType } from "para_types";
 
 const DATE_FORMAT = "YYYY-MM-DD";
 const POSTPONE_FOLDER_NAME = "postponed";
