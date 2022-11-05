@@ -148,10 +148,11 @@ export default class ParaShortcutsPlugin extends Plugin {
 	private restoreFromArchive(file: TAbstractFile): void {
 		let archiveFolderName = this.folderMapping.get(ParaType.archive);
 		let newFilePath = normalizePath(file.path.replace(archiveFolderName, ""));
+		let folderToDelete = file.parent;
 		this.moveFileAndCreateFolder(file, newFilePath)
 			.then(() => {
 				new Notice(`Restored file to ${newFilePath}`);
-				this.deleteFolderIfEmpty(file.parent);
+				this.deleteFolderIfEmpty(folderToDelete);
 			})
 			.catch((_) => {
 				new Notice(`Unable to resotre file`);
@@ -290,12 +291,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	}
 
 	private findParaTypeInPath(folder: TFolder): ParaType | null {
-		var type: ParaType | null = null;
-		this.folderMapping.forEach((val, key) => {
-			if (folder.name === val) {
-				type = key;
-			}
-		});
+		let type = this.getTypeFromName(folder.name);
 		if (type === null && !folder.isRoot()) {
 			type = this.findParaTypeInPath(folder.parent);
 		}
@@ -308,12 +304,7 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * @returns the ParaType if found, returns null if not
 	 */
 	private findTopelevelParaTypeInPath(folder: TFolder): ParaType | null {
-		var type: ParaType | null = null;
-		this.folderMapping.forEach((val, key) => {
-			if (folder.name === val) {
-				type = key;
-			}
-		});
+		let type = this.getTypeFromName(folder.name);
 		if (!folder.isRoot()) {
 			// always prioritize found type from parent to avoid nested folder issue
 			let foundTypeInParent = this.findTopelevelParaTypeInPath(
@@ -366,13 +357,24 @@ export default class ParaShortcutsPlugin extends Plugin {
 	 * Deletes given folder recursivly to the next para type if empty.
 	 * @param folder
 	 */
-	private deleteFolderIfEmpty(folder: TFolder) {
-		if (isParaType(folder.name)) {
+	private async deleteFolderIfEmpty(folder: TFolder): Promise<void> {
+		// stop when meet PARA folder
+		if (this.getTypeFromName(folder.name) !== null) {
 			return;
 		}
 		if (folder.children.length === 0) {
-			this.app.vault.delete(folder);
-			this.deleteFolderIfEmpty(folder.parent);
+			let folderToDelete = folder.parent;
+			await this.app.vault.delete(folder);
+			return this.deleteFolderIfEmpty(folderToDelete);
 		}
+	}
+
+	private getTypeFromName(name: string): ParaType | null {
+		for (let [key, val] of this.folderMapping.entries()) {
+			if (name === val) {
+				return key;
+			}
+		}
+		return null;
 	}
 }
