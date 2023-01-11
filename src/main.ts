@@ -4,7 +4,6 @@ import {
 	Notice,
 	Plugin,
 	TAbstractFile,
-	TextFileView,
 	TFolder,
 } from "obsidian";
 
@@ -115,10 +114,9 @@ export default class ParaShortcutsPlugin extends Plugin {
 				filepath,
 				this.createMetaHeader()
 			);
-			await this.app.workspace.activeLeaf.openFile(
-				createdFile,
-				TextFileView
-			); // open the created file
+			
+			let activeLeaf = this.app.workspace.getLeaf(true);
+			activeLeaf.openFile(createdFile);
 		}
 	}
 
