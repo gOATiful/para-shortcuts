@@ -115,9 +115,9 @@ export default class ParaShortcutsPlugin extends Plugin {
 				filepath,
 				this.createMetaHeader()
 			);
-			await this.app.workspace.activeLeaf.openFile(
+			await this.app.workspace.getLeaf().openFile(
 				createdFile,
-				TextFileView
+				{active: true}
 			); // open the created file
 		}
 	}
